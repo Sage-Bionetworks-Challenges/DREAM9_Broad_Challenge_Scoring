@@ -89,6 +89,16 @@ score<-function(evaluation, submissionStateToFilter) {
   offset<-0
   statusesToUpdate<-list()
   while(offset<total) {
+    #read measured values
+    achilles <- synGet(id = "syn2468461", downloadFile = TRUE)
+    achillesPath <- getFileLocation(achilles)
+    measured <- read.table(achillesPath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
+    gene_names <- as.character(measured[,1])
+    cell_line_names <- colnames(measured)[-2:-1]
+    measured_data <- t(measured[,-2:-1])
+    colnames(measured_data) <- gene_names
+    rownames(measured_data) <- cell_line_names
+    
     if (FALSE) {
       # get ALL the submissions in the Evaluation
       submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s",
@@ -107,17 +117,7 @@ score<-function(evaluation, submissionStateToFilter) {
         # download the file
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        # challenge-specific scoring of the downloaded file goes here
-
-        #read measured values
-        achilles <- synGet(id = "syn2468461", downloadFile = TRUE)
-        achillesPath <- getFileLocation(achilles)
-        measured <- read.table(achillesPath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
-        gene_names <- as.character(measured[,1])
-        cell_line_names <- colnames(measured)[-2:-1]
-        measured_data <- t(measured[,-2:-1])
-        colnames(measured_data) <- gene_names
-        rownames(measured_data) <- cell_line_names
+        
         #read predicted values
         predicted <- read.table(filePath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
         gene_names <- as.character(predicted[,1])
