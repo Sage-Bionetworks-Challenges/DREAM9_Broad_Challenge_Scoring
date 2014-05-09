@@ -2,7 +2,7 @@
 #
 # This is the code for scoring submissions to the DREAM 9 Broad Challenge.
 #
-# Author: brucehoff
+# Author: brucehoff and mehmetgonen
 #
 ###############################################################################
 
@@ -88,6 +88,17 @@ score<-function(evaluation, submissionStateToFilter) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
+  
+  #read measured values
+  achilles <- synGet(id = "syn2468461", downloadFile = TRUE)
+  achillesPath <- getFileLocation(achilles)
+  measured <- read.table(achillesPath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
+  gene_names <- as.character(measured[,1])
+  cell_line_names <- colnames(measured)[-2:-1]
+  measured_data <- t(measured[,-2:-1])
+  colnames(measured_data) <- gene_names
+  rownames(measured_data) <- cell_line_names
+  
   while(offset<total) {
     if (FALSE) {
       # get ALL the submissions in the Evaluation
@@ -107,8 +118,24 @@ score<-function(evaluation, submissionStateToFilter) {
         # download the file
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        # challenge-specific scoring of the downloaded file goes here
-        score<-runif(1)
+        
+        #read predicted values
+        predicted <- read.table(filePath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
+        gene_names <- as.character(predicted[,1])
+        cell_line_names <- colnames(predicted)[-2:-1]
+        predicted_data <- t(predicted[,-2:-1])
+        colnames(predicted_data) <- gene_names
+        rownames(predicted_data) <- cell_line_names        
+        #make predicted data in the same order with achilles data
+        predicted_data <- predicted_data[rownames(measured_data), colnames(measured_data)]
+        #calculate performance score for leaderboard
+        gene_count <- ncol(measured_data)
+        correlation_per_gene <- matrix(0, 1, gene_count)
+        for (i in 1:gene_count) {
+          correlation_per_gene[i] <- cor(measured_data[,i], predicted_data[,i], method = 'spearman')
+        }
+        score <- mean(correlation_per_gene)
+        
         subStatus<-page[[i]]$submissionStatus
         subStatus$status<-"SCORED"
         # add the score and any other information as submission annotations:
