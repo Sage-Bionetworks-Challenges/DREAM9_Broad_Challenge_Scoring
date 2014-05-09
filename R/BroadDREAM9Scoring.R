@@ -88,17 +88,18 @@ score<-function(evaluation, submissionStateToFilter) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
+  
+  #read measured values
+  achilles <- synGet(id = "syn2468461", downloadFile = TRUE)
+  achillesPath <- getFileLocation(achilles)
+  measured <- read.table(achillesPath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
+  gene_names <- as.character(measured[,1])
+  cell_line_names <- colnames(measured)[-2:-1]
+  measured_data <- t(measured[,-2:-1])
+  colnames(measured_data) <- gene_names
+  rownames(measured_data) <- cell_line_names
+  
   while(offset<total) {
-    #read measured values
-    achilles <- synGet(id = "syn2468461", downloadFile = TRUE)
-    achillesPath <- getFileLocation(achilles)
-    measured <- read.table(achillesPath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
-    gene_names <- as.character(measured[,1])
-    cell_line_names <- colnames(measured)[-2:-1]
-    measured_data <- t(measured[,-2:-1])
-    colnames(measured_data) <- gene_names
-    rownames(measured_data) <- cell_line_names
-    
     if (FALSE) {
       # get ALL the submissions in the Evaluation
       submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s",
