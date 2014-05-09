@@ -84,7 +84,7 @@ updateSubmissionStatusBatch<-function(evaluation, statusesToUpdate) {
   }
 }
 
-score<-function(evaluation, submissionStateToFilter) {
+score1<-function(evaluation, submissionStateToFilter) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
@@ -135,6 +135,43 @@ score<-function(evaluation, submissionStateToFilter) {
           correlation_per_gene[i] <- cor(measured_data[,i], predicted_data[,i], method = 'spearman')
         }
         score <- mean(correlation_per_gene)
+        
+        subStatus<-page[[i]]$submissionStatus
+        subStatus$status<-"SCORED"
+        # add the score and any other information as submission annotations:
+        subStatus$annotations<-generateAnnotations(submission, score)
+        statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+      }
+    }
+  }
+  updateSubmissionStatusBatch(evaluation, statusesToUpdate)
+  message(sprintf("Retrieved and scored %s submissions.", length(statusesToUpdate)))
+}
+
+score2<-function(evaluation, submissionStateToFilter) {
+  total<-1e+10
+  offset<-0
+  statusesToUpdate<-list()
+  while(offset<total) {
+    if (FALSE) {
+      # get ALL the submissions in the Evaluation
+      submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s",
+                                            evaluation$id, PAGE_SIZE, offset)) 
+    } else {
+      # alternatively just get the unscored submissions in the Evaluation
+      # here we get the ones that the 'validation' step (above) marked as validated
+      submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s",
+                                            evaluation$id, PAGE_SIZE, offset, submissionStateToFilter)) 
+    }
+    total<-submissionBundles$totalNumberOfResults
+    offset<-offset+PAGE_SIZE
+    page<-submissionBundles$results
+    if (length(page)>0) {
+      for (i in 1:length(page)) {
+        # download the file
+        submission<-synGetSubmission(page[[i]]$submission$id)
+        filePath<-getFileLocation(submission)
+        score <- runif(1)
         
         subStatus<-page[[i]]$submissionStatus
         subStatus$status<-"SCORED"
