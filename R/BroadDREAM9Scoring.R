@@ -131,8 +131,8 @@ score1<-function(evaluation, submissionStateToFilter) {
         #calculate performance score for leaderboard
         gene_count <- ncol(measured_data)
         correlation_per_gene <- matrix(0, 1, gene_count)
-        for (i in 1:gene_count) {
-          correlation_per_gene[i] <- cor(measured_data[,i], predicted_data[,i], method = 'spearman')
+        for (gene_index in 1:gene_count) {
+          correlation_per_gene[gene_index] <- cor(measured_data[,gene_index], predicted_data[,gene_index], method = 'spearman')
         }
         score <- mean(correlation_per_gene)
         
@@ -209,7 +209,7 @@ scoringApplication<-function() {
   
   # score the validated submissions
   # if 'validation' is used then we pass "VALIDATED" below, otherwise "RECEIVED"
-  score(evaluation1, "RECEIVED")
+  score1(evaluation1, "RECEIVED")
   
   
   evaluation2<-synGetEvaluation(evaluationId2)
@@ -218,7 +218,7 @@ scoringApplication<-function() {
   # validate(evaluation2)
   
   # eventually 'score' will be customized for the sub-challenges
-  score(evaluation2, "RECEIVED")
+  score2(evaluation2, "RECEIVED")
 }
 
 scoringApplication()
