@@ -10,31 +10,69 @@ library(RJSONIO)
 library(synapseClient)
 
 # page size for retrieving submissions
-PAGE_SIZE <- 100
+PAGE_SIZE<-100
 # batch size for uploading submission status updates
-BATCH_SIZE <- 500
+BATCH_SIZE<-500
 
 evaluationId1<-"2468319"
 evaluationId2<-"2468322"
+evaluationId3<-"2482339"
 
-readPredictionFile<-function(id) {
-  synEntity <- synGet(id, downloadFile = TRUE)
-  filePath <- getFileLocation(synEntity)
-  content <- read.table(filePath, header = TRUE, sep = "\t", skip = 2, stringsAsFactors = FALSE)
-  gene_names <- as.character(content[,1])
-  cell_line_names <- colnames(content)[-2:-1]
-  content_data <- t(content[,-2:-1])
-  colnames(content_data) <- gene_names
-  rownames(content_data) <- cell_line_names
-  return (content_data)
+readMeasuredFile<-function(id) {
+  synEntity<-synGet(id)
+  filePath<-getFileLocation(synEntity)
+  measuredData<-parsePredictionFile(filePath)
+  return (measuredData)
+}
+
+parsePredictionFile<-function(filePath) {  
+  fileContent<-read.table(filePath, header=TRUE, sep="\t", skip=2, stringsAsFactors=FALSE)
+  geneNames<-as.character(fileContent[,1])
+  cellLineNames<-colnames(fileContent)[-2:-1]
+  predictionData<-t(fileContent[,-2:-1])
+  colnames(predictionData)<-geneNames
+  rownames(predictionData)<-cellLineNames
+  return (predictionData)
+}
+
+readPrioritizedGeneList<-function() {
+  synEntity<-synGet("syn2482403")
+  filePath<-getFileLocation(synEntity)
+  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
+  geneList<-as.character(fileContent[,1])  
+  return (geneList)
+}
+
+readCopyNumberFeatureList<-function() {
+  synEntity<-synGet("syn2482674")
+  filePath<-getFileLocation(synEntity)
+  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
+  featureList<-as.character(fileContent[,1])  
+  return (featureList)
+}
+
+readGeneExpressionFeatureList<-function() {
+  synEntity<-synGet("syn2482675")
+  filePath<-getFileLocation(synEntity)
+  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
+  featureList<-as.character(fileContent[,1])  
+  return (featureList)
+}
+
+calculateScore<-function(measuredData, predictedData) {
+  geneCount<-ncol(measuredData)
+  correlationPerGene<-matrix(0, 1, geneCount)
+  for (g in 1:geneCount) {
+    correlationPerGene[g]<-cor(measuredData[,g], predictedData[,g], method='spearman')
+  }
+  score<-mean(correlationPerGene)
+  return (score)
 }
 
 validate1<-function(evaluation) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
-  
-  measured_data <- readPredictionFile(id = "syn2468461")
 
   while(offset<total) {
     submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, "RECEIVED")) 
@@ -42,20 +80,26 @@ validate1<-function(evaluation) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
-        checkSubmission <- try(
+        filePath<-getFileLocation(submission)
+        directoryPath<-dirname(filePath)
+        checkSubmission<-try(
 {
-  predicted_data<-readPredictionFile(id = submission$entityId)
-  predicted_data <- predicted_data[rownames(measured_data), colnames(measured_data)]
-}, silent = TRUE)
+  stopifnot(length(list.files(directoryPath, pattern='\\.gct$')) == 1)
+  predictedData<-parsePredictionFile(filePath)
+  stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
+  stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
+  predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+}, silent=TRUE)
         isValid<-!inherits(checkSubmission, "try-error")
         subStatus<-page[[i]]$submissionStatus
         if (isValid) {
           newStatus<-"VALIDATED"
         } else {
           newStatus<-"INVALID"
-          sendMessage(list(submission$userId), "Submission Acknowledgment", paste0("Your submission with synapse id ", submission$entityId," is invalid. Please try again."))
+          sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
         }        
         subStatus$status<-newStatus
         subStatus$annotations<-generateAnnotations(submission, NA)
@@ -70,31 +114,94 @@ validate2<-function(evaluation) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
+
   while(offset<total) {
     submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, "RECEIVED")) 
     total<-submissionBundles$totalNumberOfResults
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")
+      geneList<-readPrioritizedGeneList()
+      measuredData<-measuredData[,geneList]
       for (i in 1:length(page)) {
-        # need to download the file
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        # challenge-specific validation of the downloaded file goes here
-        isValid<-TRUE
-        if (isValid) {
-          newStatus<-"VALIDATED"
-        } else {
-          newStatus<-"INVALID"
-          sendMessage(list(), "Submission Acknowledgment", "Your submission is invalid. Please try again.")
-        }
-        subStatus<-page[[i]]$submissionStatus
-        subStatus$status<-newStatus
-        statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+        directoryPath<-dirname(filePath)
+        checkSubmission<-try(
+{
+  stopifnot(length(list.files(directoryPath, pattern='\\.zip$')) == 1)
+  extractPath<-paste0(directoryPath, '/content')
+  unzip(filePath, junkpaths=T, exdir=extractPath)
+  stopifnot(length(list.files(extractPath, pattern='\\.gct$')) == 1)
+  predictedPath<-list.files(extractPath, pattern='\\.gct$', full.names=TRUE)[1]
+  predictedData<-parsePredictionFile(predictedPath)
+  stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
+  stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
+  predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+}, silent=TRUE)
+isValid<-!inherits(checkSubmission, "try-error")
+subStatus<-page[[i]]$submissionStatus
+if (isValid) {
+  newStatus<-"VALIDATED"
+} else {
+  newStatus<-"INVALID"
+  sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
+}        
+subStatus$status<-newStatus
+subStatus$annotations<-generateAnnotations(submission, NA)
+statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
       }
     }
   }
-  updateSubmissionStatusBatch(evaluation, statusesToUpdate)
+updateSubmissionStatusBatch(evaluation, statusesToUpdate)
+}
+
+validate3<-function(evaluation) {
+  total<-1e+10
+  offset<-0
+  statusesToUpdate<-list()
+  
+  while(offset<total) {
+    submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, "RECEIVED")) 
+    total<-submissionBundles$totalNumberOfResults
+    offset<-offset+PAGE_SIZE
+    page<-submissionBundles$results
+    if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")
+      geneList<-readPrioritizedGeneList()
+      measuredData<-measuredData[,geneList]
+      for (i in 1:length(page)) {
+        submission<-synGetSubmission(page[[i]]$submission$id)
+        filePath<-getFileLocation(submission)
+        directoryPath<-dirname(filePath)
+        checkSubmission<-try(
+{
+  stopifnot(length(list.files(directoryPath, pattern='\\.zip$')) == 1)
+  extractPath<-paste0(directoryPath, '/content')
+  unzip(filePath, junkpaths=T, exdir=extractPath)
+  stopifnot(length(list.files(extractPath, pattern='\\.gct$')) == 1)
+  predictedPath<-list.files(extractPath, pattern='\\.gct$', full.names=TRUE)[1]
+  predictedData<-parsePredictionFile(predictedPath)
+  stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
+  stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
+  predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+}, silent=TRUE)
+isValid<-!inherits(checkSubmission, "try-error")
+subStatus<-page[[i]]$submissionStatus
+if (isValid) {
+  newStatus<-"VALIDATED"
+} else {
+  newStatus<-"INVALID"
+  sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
+}        
+subStatus$status<-newStatus
+subStatus$annotations<-generateAnnotations(submission, NA)
+statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+      }
+    }
+  }
+updateSubmissionStatusBatch(evaluation, statusesToUpdate)
 }
 
 BATCH_UPLOAD_RETRY_COUNT<-3
@@ -136,8 +243,35 @@ score1<-function(evaluation, submissionStateToFilter) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
-  
-  measured_data <- readPredictionFile(id = "syn2468461")
+
+  while(offset<total) {
+    submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, submissionStateToFilter)) 
+    total<-submissionBundles$totalNumberOfResults
+    offset<-offset+PAGE_SIZE
+    page<-submissionBundles$results
+    if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")
+      for (i in 1:length(page)) {
+        submission<-synGetSubmission(page[[i]]$submission$id)
+        filePath<-getFileLocation(submission)
+        predictedData<-parsePredictionFile(filePath)
+        predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+        score<-calculateScore(measuredData, predictedData)
+        subStatus<-page[[i]]$submissionStatus
+        subStatus$status<-"SCORED"
+        subStatus$annotations<-generateAnnotations(submission, score)
+        statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+      }
+    }
+  }
+  updateSubmissionStatusBatch(evaluation, statusesToUpdate)
+  message(sprintf("Retrieved and scored %s submission(s) for %s.", length(statusesToUpdate), evaluation$name))
+}
+
+score2<-function(evaluation, submissionStateToFilter) {
+  total<-1e+10
+  offset<-0
+  statusesToUpdate<-list()
   
   while(offset<total) {
     submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, submissionStateToFilter)) 
@@ -145,16 +279,17 @@ score1<-function(evaluation, submissionStateToFilter) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")  
+      geneList<-readPrioritizedGeneList()
+      measuredData<-measuredData[,geneList]
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
-        predicted_data<-readPredictionFile(id = submission$entityId)
-        predicted_data <- predicted_data[rownames(measured_data), colnames(measured_data)]
-        gene_count <- ncol(measured_data)
-        correlation_per_gene <- matrix(0, 1, gene_count)
-        for (gene_index in 1:gene_count) {
-          correlation_per_gene[gene_index] <- cor(measured_data[,gene_index], predicted_data[,gene_index], method = 'spearman')
-        }
-        score <- mean(correlation_per_gene)
+        filePath<-getFileLocation(submission)
+        directoryPath<-paste0(dirname(filePath), '/content')
+        predictedPath<-list.files(directoryPath, pattern='\\.gct$', full.names=TRUE)[1]
+        predictedData<-parsePredictionFile(predictedPath)
+        predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+        score<-calculateScore(measuredData, predictedData)
         subStatus<-page[[i]]$submissionStatus
         subStatus$status<-"SCORED"
         subStatus$annotations<-generateAnnotations(submission, score)
@@ -163,42 +298,41 @@ score1<-function(evaluation, submissionStateToFilter) {
     }
   }
   updateSubmissionStatusBatch(evaluation, statusesToUpdate)
-  message(sprintf("Retrieved and scored %s submissions.", length(statusesToUpdate)))
+  message(sprintf("Retrieved and scored %s submission(s) for %s.", length(statusesToUpdate), evaluation$name))
 }
 
-score2<-function(evaluation, submissionStateToFilter) {
+score3<-function(evaluation, submissionStateToFilter) {
   total<-1e+10
   offset<-0
   statusesToUpdate<-list()
+  
   while(offset<total) {
-    if (FALSE) {
-      # get ALL the submissions in the Evaluation
-      submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s", evaluation$id, PAGE_SIZE, offset)) 
-    } else {
-      # alternatively just get the unscored submissions in the Evaluation
-      # here we get the ones that the 'validation' step (above) marked as validated
-      submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, submissionStateToFilter)) 
-    }
+    submissionBundles<-synRestGET(sprintf("/evaluation/%s/submission/bundle/all?limit=%s&offset=%s&status=%s", evaluation$id, PAGE_SIZE, offset, submissionStateToFilter)) 
     total<-submissionBundles$totalNumberOfResults
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
+      measuredData<-readMeasuredFile("syn2468461")  
+      geneList<-readPrioritizedGeneList()
+      measuredData<-measuredData[,geneList]
+      
       for (i in 1:length(page)) {
-        # download the file
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        score <- runif(1)
-        
+        directoryPath<-paste0(dirname(filePath), '/content')
+        predictedPath<-list.files(directoryPath, pattern='\\.gct$', full.names=TRUE)[1]
+        predictedData<-parsePredictionFile(predictedPath)
+        predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+        score<-calculateScore(measuredData, predictedData)
         subStatus<-page[[i]]$submissionStatus
         subStatus$status<-"SCORED"
-        # add the score and any other information as submission annotations:
         subStatus$annotations<-generateAnnotations(submission, score)
         statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
       }
     }
   }
   updateSubmissionStatusBatch(evaluation, statusesToUpdate)
-  message(sprintf("Retrieved and scored %s submissions.", length(statusesToUpdate)))
+  message(sprintf("Retrieved and scored %s submission(s) for %s.", length(statusesToUpdate), evaluation$name))
 }
 
 generateAnnotations<-function(submission, score) {
@@ -222,9 +356,13 @@ scoringApplication<-function() {
   validate1(evaluation1)
   score1(evaluation1, "VALIDATED")
   
-  #evaluation2<-synGetEvaluation(evaluationId2)
-  #validate2(evaluation2)
-  #score2(evaluation2, "VALIDATED")
+  evaluation2<-synGetEvaluation(evaluationId2)
+  validate2(evaluation2)
+  score2(evaluation2, "VALIDATED")
+  
+  evaluation3<-synGetEvaluation(evaluationId3)
+  validate3(evaluation3)
+  score3(evaluation3, "VALIDATED")
 }
 
 scoringApplication()
