@@ -340,8 +340,8 @@ generateAnnotations<-function(submission, score) {
     stringAnnos=list(
       list(key="SubmissionName", value=submission$name, isPrivate=FALSE),
       list(key="Team", value=submission$submitterAlias, isPrivate=FALSE),
-      list(key="userId", value=submission$userId, isPrivate=FALSE),
-      list(key="createdOn", value=submission$createdOn, isPrivate=FALSE)
+      list(key="userIdPublic", value=submission$userId, isPrivate=FALSE),
+      list(key="createdOnPublic", value=submission$createdOn, isPrivate=FALSE)
     ),
     doubleAnnos=list(
       list(key="score", value=score, isPrivate=FALSE)
