@@ -336,10 +336,14 @@ score3<-function(evaluation, submissionStateToFilter) {
 }
 
 generateAnnotations<-function(submission, score) {
+  teamName<-submission$submitterAlias
+  if (is.null(teamName)) {
+    teamName<-synGetUserProfile(submission$userId)$userName 
+  }
   list(
     stringAnnos=list(
       list(key="SubmissionName", value=submission$name, isPrivate=FALSE),
-      list(key="Team", value=submission$submitterAlias, isPrivate=FALSE),
+      list(key="Team", value=teamName, isPrivate=FALSE),
       list(key="userIdPublic", value=submission$userId, isPrivate=FALSE),
       list(key="createdOnPublic", value=submission$createdOn, isPrivate=FALSE)
     ),
