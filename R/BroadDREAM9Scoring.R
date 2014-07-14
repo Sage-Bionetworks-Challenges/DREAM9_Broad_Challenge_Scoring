@@ -14,9 +14,18 @@ PAGE_SIZE<-100
 # batch size for uploading submission status updates
 BATCH_SIZE<-500
 
+SUBCHALLENGE2_FEATURE_COUNT<-10
+SUBCHALLENGE3_FEATURE_COUNT<-100
+
 evaluationId1<-"2468319"
 evaluationId2<-"2468322"
 evaluationId3<-"2482339"
+
+measuredDataId<-"syn2468461"
+
+prioritizedGeneListId<-"syn2482403"
+copyNumberFeatureListId<-"syn2482674"
+expressionFeatureListId<-"syn2482675"
 
 readMeasuredFile<-function(id) {
   synEntity<-synGet(id)
@@ -35,28 +44,17 @@ parsePredictionFile<-function(filePath) {
   return (predictionData)
 }
 
-readPrioritizedGeneList<-function() {
-  synEntity<-synGet("syn2482403")
+readFeatureFile<-function(id) {
+  synEntity<-synGet(id)
   filePath<-getFileLocation(synEntity)
-  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
-  geneList<-as.character(fileContent[,1])  
-  return (geneList)
+  featureData<-parseFeatureFile(filePath)
+  return (featureData)
 }
 
-readCopyNumberFeatureList<-function() {
-  synEntity<-synGet("syn2482674")
-  filePath<-getFileLocation(synEntity)
-  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
-  featureList<-as.character(fileContent[,1])  
-  return (featureList)
-}
-
-readGeneExpressionFeatureList<-function() {
-  synEntity<-synGet("syn2482675")
-  filePath<-getFileLocation(synEntity)
-  fileContent<-read.table(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
-  featureList<-as.character(fileContent[,1])  
-  return (featureList)
+parseFeatureFile<-function(filePath) {
+  fileContent<-read.csv(filePath, header=FALSE, sep="\t", stringsAsFactors=FALSE)
+  featureData<-as.matrix(fileContent)
+  return (featureData)
 }
 
 calculateScore<-function(measuredData, predictedData) {
@@ -80,7 +78,7 @@ validate1<-function(evaluation) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")
+      measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
@@ -121,9 +119,12 @@ validate2<-function(evaluation) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")
-      geneList<-readPrioritizedGeneList()
-      measuredData<-measuredData[,geneList]
+      measuredData<-readMeasuredFile(measuredDataId)
+      copyNumberFeatureList<-readFeatureFile(copyNumberFeatureListId)
+      expressionFeatureList<-readFeatureFile(expressionFeatureListId)
+      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), NA)
+      prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
+      measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
@@ -139,6 +140,12 @@ validate2<-function(evaluation) {
   stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+  stopifnot(length(list.files(extractPath, pattern='\\.txt$')) == 1)
+  featurePath<-list.files(extractPath, pattern='\\.txt$', full.names=TRUE)[1]
+  featureData<-parseFeatureFile(featurePath)
+  stopifnot(dim(featureData)[1] == length(prioritizedGeneList))
+  stopifnot(dim(featureData)[2] == SUBCHALLENGE2_FEATURE_COUNT + 1)
+  stopifnot(length(which(featureData[,-1] %in% combinedFeatureList)) == length(prioritizedGeneList) * SUBCHALLENGE2_FEATURE_COUNT)
 }, silent=TRUE)
 isValid<-!inherits(checkSubmission, "try-error")
 subStatus<-page[[i]]$submissionStatus
@@ -168,9 +175,12 @@ validate3<-function(evaluation) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")
-      geneList<-readPrioritizedGeneList()
-      measuredData<-measuredData[,geneList]
+      measuredData<-readMeasuredFile(measuredDataId)
+      copyNumberFeatureList<-readFeatureFile(copyNumberFeatureListId)
+      expressionFeatureList<-readFeatureFile(expressionFeatureListId)
+      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), NA)
+      prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
+      measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
@@ -186,6 +196,11 @@ validate3<-function(evaluation) {
   stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
+  stopifnot(length(list.files(extractPath, pattern='\\.txt$')) == 1)
+  featurePath<-list.files(extractPath, pattern='\\.txt$', full.names=TRUE)[1]
+  featureData<-parseFeatureFile(featurePath)
+  stopifnot(length(featureData) == SUBCHALLENGE3_FEATURE_COUNT)
+  stopifnot(length(which(featureData %in% combinedFeatureList)) == SUBCHALLENGE3_FEATURE_COUNT)
 }, silent=TRUE)
 isValid<-!inherits(checkSubmission, "try-error")
 subStatus<-page[[i]]$submissionStatus
@@ -250,7 +265,7 @@ score1<-function(evaluation, submissionStateToFilter) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")
+      measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
@@ -279,9 +294,9 @@ score2<-function(evaluation, submissionStateToFilter) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")  
-      geneList<-readPrioritizedGeneList()
-      measuredData<-measuredData[,geneList]
+      measuredData<-readMeasuredFile(measuredDataId)  
+      prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
+      measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
@@ -312,10 +327,9 @@ score3<-function(evaluation, submissionStateToFilter) {
     offset<-offset+PAGE_SIZE
     page<-submissionBundles$results
     if (length(page)>0) {
-      measuredData<-readMeasuredFile("syn2468461")  
-      geneList<-readPrioritizedGeneList()
-      measuredData<-measuredData[,geneList]
-      
+      measuredData<-readMeasuredFile(measuredDataId)  
+      prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
+      measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
