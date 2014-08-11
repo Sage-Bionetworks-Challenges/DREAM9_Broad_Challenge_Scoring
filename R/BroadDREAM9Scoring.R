@@ -17,15 +17,27 @@ BATCH_SIZE<-500
 SUBCHALLENGE2_FEATURE_COUNT<-10
 SUBCHALLENGE3_FEATURE_COUNT<-100
 
-evaluationId1<-"2468319"
-evaluationId2<-"2468322"
-evaluationId3<-"2482339"
+#### phase 1 (legacy)
+#evaluationId1<-"2468319"
+#evaluationId2<-"2468322"
+#evaluationId3<-"2482339"
 
-measuredDataId<-"syn2468461"
+#measuredDataId<-"syn2468461"
 
-prioritizedGeneListId<-"syn2482403"
-copyNumberFeatureListId<-"syn2482674"
-expressionFeatureListId<-"syn2482675"
+#prioritizedGeneListId<-"syn2482403"
+#copyNumberFeatureListId<-"syn2482674"
+#expressionFeatureListId<-"syn2482675"
+####
+
+evaluationId1<-"2571160"
+evaluationId2<-"2571162"
+evaluationId3<-"2571164"
+
+measuredDataId<-"syn2582441"
+
+prioritizedGeneListId<-"syn2598397"
+copyNumberFeatureListId<-"syn2598376"
+expressionFeatureListId<-"syn2598381"
 
 readMeasuredFile<-function(id) {
   synEntity<-synGet(id)
@@ -143,8 +155,8 @@ validate2<-function(evaluation) {
   stopifnot(length(list.files(extractPath, pattern='\\.txt$')) == 1)
   featurePath<-list.files(extractPath, pattern='\\.txt$', full.names=TRUE)[1]
   featureData<-parseFeatureFile(featurePath)
-  stopifnot(dim(featureData)[1] == length(prioritizedGeneList))
-  stopifnot(dim(featureData)[2] == SUBCHALLENGE2_FEATURE_COUNT + 1)
+  stopifnot(nrow(featureData) == length(prioritizedGeneList))
+  stopifnot(ncol(featureData) == SUBCHALLENGE2_FEATURE_COUNT + 1)
   stopifnot(length(which(featureData[,-1] %in% combinedFeatureList)) == length(prioritizedGeneList) * SUBCHALLENGE2_FEATURE_COUNT)
 }, silent=TRUE)
 isValid<-!inherits(checkSubmission, "try-error")
