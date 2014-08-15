@@ -103,14 +103,24 @@ validate1<-function(evaluation) {
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
 }, silent=TRUE)
-        isValid<-!inherits(checkSubmission, "try-error")
+        checkScoring<-try(
+        {
+          stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+        } , silent=TRUE)
+        isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
         subStatus<-page[[i]]$submissionStatus
         if (isValid) {
           newStatus<-"VALIDATED"
         } else {
-          newStatus<-"INVALID"
-          sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
-        }        
+          if (inherits(checkSubmission, "try-error")) {
+            newStatus<-"INVALID"
+            sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again.")) 
+          }
+          if (inherits(checkScoring, "try-error")) {
+            newStatus<-"REJECTED"
+            sendMessage(list(submission$userId), paste0("Rejected submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is rejected due to zero standard deviation over gene essentiality predictions for some of the genes, which makes Spearman correlation calculation impossible.")) 
+          }
+        }
         subStatus$status<-newStatus
         subStatus$annotations<-generateAnnotations(submission, NA)
         statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
@@ -159,17 +169,27 @@ validate2<-function(evaluation) {
   stopifnot(ncol(featureData) == SUBCHALLENGE2_FEATURE_COUNT + 1)
   stopifnot(length(which(featureData[,-1] %in% combinedFeatureList)) == length(prioritizedGeneList) * SUBCHALLENGE2_FEATURE_COUNT)
 }, silent=TRUE)
-isValid<-!inherits(checkSubmission, "try-error")
-subStatus<-page[[i]]$submissionStatus
-if (isValid) {
-  newStatus<-"VALIDATED"
-} else {
-  newStatus<-"INVALID"
-  sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
-}        
-subStatus$status<-newStatus
-subStatus$annotations<-generateAnnotations(submission, NA)
-statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+        checkScoring<-try(
+        {
+          stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+        } , silent=TRUE)
+        isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
+        subStatus<-page[[i]]$submissionStatus
+        if (isValid) {
+          newStatus<-"VALIDATED"
+        } else {
+          if (inherits(checkSubmission, "try-error")) {
+            newStatus<-"INVALID"
+            sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again.")) 
+          }
+          if (inherits(checkScoring, "try-error")) {
+            newStatus<-"REJECTED"
+            sendMessage(list(submission$userId), paste0("Rejected submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is rejected due to zero standard deviation over gene essentiality predictions for some of the genes, which makes Spearman correlation calculation impossible."))
+          }
+        }
+        subStatus$status<-newStatus
+        subStatus$annotations<-generateAnnotations(submission, NA)
+        statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
       }
     }
   }
@@ -214,17 +234,27 @@ validate3<-function(evaluation) {
   stopifnot(length(featureData) == SUBCHALLENGE3_FEATURE_COUNT)
   stopifnot(length(which(featureData %in% combinedFeatureList)) == SUBCHALLENGE3_FEATURE_COUNT)
 }, silent=TRUE)
-isValid<-!inherits(checkSubmission, "try-error")
-subStatus<-page[[i]]$submissionStatus
-if (isValid) {
-  newStatus<-"VALIDATED"
-} else {
-  newStatus<-"INVALID"
-  sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again."))
-}        
-subStatus$status<-newStatus
-subStatus$annotations<-generateAnnotations(submission, NA)
-statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
+        checkScoring<-try(
+{
+  stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+} , silent=TRUE)
+        isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
+        subStatus<-page[[i]]$submissionStatus
+        if (isValid) {
+          newStatus<-"VALIDATED"
+        } else {
+          if (inherits(checkSubmission, "try-error")) {
+            newStatus<-"INVALID"
+            sendMessage(list(submission$userId), paste0("Invalid submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is invalid. Please check the submission format at https://www.synapse.org/#!Synapse:syn2384331/wiki/64275 and try again.")) 
+          }
+          if (inherits(checkScoring, "try-error")) {
+            newStatus<-"REJECTED"
+            sendMessage(list(submission$userId), paste0("Rejected submission for ", evaluation$name), paste0("Your submission for ", evaluation$name, " with synapse id ", submission$entityId, " is rejected due to zero standard deviation over gene essentiality predictions for some of the genes, which makes Spearman correlation calculation impossible."))
+          }
+        }
+        subStatus$status<-newStatus
+        subStatus$annotations<-generateAnnotations(submission, NA)
+        statusesToUpdate[[length(statusesToUpdate)+1]]<-subStatus
       }
     }
   }
