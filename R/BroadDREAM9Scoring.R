@@ -73,7 +73,7 @@ calculateScore<-function(measuredData, predictedData) {
   geneCount<-ncol(measuredData)
   correlationPerGene<-matrix(0, 1, geneCount)
   for (g in 1:geneCount) {
-    correlationPerGene[g]<-cor(measuredData[,g], predictedData[,g], method='spearman')
+    correlationPerGene[g]<-cor(measuredData[,g], predictedData[,g], method="spearman")
   }
   score<-mean(correlationPerGene)
   return (score)
@@ -97,7 +97,7 @@ validate1<-function(evaluation) {
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
 {
-  stopifnot(length(list.files(directoryPath, pattern='\\.gct$')) == 1)
+  stopifnot(length(list.files(directoryPath, pattern="\\.gct$")) == 1)
   predictedData<-parsePredictionFile(filePath)
   stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
@@ -153,17 +153,17 @@ validate2<-function(evaluation) {
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
 {
-  stopifnot(length(list.files(directoryPath, pattern='\\.zip$')) == 1)
-  extractPath<-paste0(directoryPath, '/content')
+  stopifnot(length(list.files(directoryPath, pattern="\\.zip$")) == 1)
+  extractPath<-paste0(directoryPath, "/content")
   unzip(filePath, junkpaths=T, exdir=extractPath)
-  stopifnot(length(list.files(extractPath, pattern='\\.gct$')) == 1)
-  predictedPath<-list.files(extractPath, pattern='\\.gct$', full.names=TRUE)[1]
+  stopifnot(length(list.files(extractPath, pattern="\\.gct$")) == 1)
+  predictedPath<-list.files(extractPath, pattern="\\.gct$", full.names=TRUE)[1]
   predictedData<-parsePredictionFile(predictedPath)
   stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
-  stopifnot(length(list.files(extractPath, pattern='\\.txt$')) == 1)
-  featurePath<-list.files(extractPath, pattern='\\.txt$', full.names=TRUE)[1]
+  stopifnot(length(list.files(extractPath, pattern="\\.txt$")) == 1)
+  featurePath<-list.files(extractPath, pattern="\\.txt$", full.names=TRUE)[1]
   featureData<-parseFeatureFile(featurePath)
   stopifnot(nrow(featureData) == length(prioritizedGeneList))
   stopifnot(ncol(featureData) == SUBCHALLENGE2_FEATURE_COUNT + 1)
@@ -219,17 +219,17 @@ validate3<-function(evaluation) {
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
 {
-  stopifnot(length(list.files(directoryPath, pattern='\\.zip$')) == 1)
-  extractPath<-paste0(directoryPath, '/content')
+  stopifnot(length(list.files(directoryPath, pattern="\\.zip$")) == 1)
+  extractPath<-paste0(directoryPath, "/content")
   unzip(filePath, junkpaths=T, exdir=extractPath)
-  stopifnot(length(list.files(extractPath, pattern='\\.gct$')) == 1)
-  predictedPath<-list.files(extractPath, pattern='\\.gct$', full.names=TRUE)[1]
+  stopifnot(length(list.files(extractPath, pattern="\\.gct$")) == 1)
+  predictedPath<-list.files(extractPath, pattern="\\.gct$", full.names=TRUE)[1]
   predictedData<-parsePredictionFile(predictedPath)
   stopifnot(setequal(rownames(measuredData), rownames(predictedData)))
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
-  stopifnot(length(list.files(extractPath, pattern='\\.txt$')) == 1)
-  featurePath<-list.files(extractPath, pattern='\\.txt$', full.names=TRUE)[1]
+  stopifnot(length(list.files(extractPath, pattern="\\.txt$")) == 1)
+  featurePath<-list.files(extractPath, pattern="\\.txt$", full.names=TRUE)[1]
   featureData<-parseFeatureFile(featurePath)
   stopifnot(length(featureData) == SUBCHALLENGE3_FEATURE_COUNT)
   stopifnot(length(which(featureData %in% combinedFeatureList)) == SUBCHALLENGE3_FEATURE_COUNT)
@@ -342,8 +342,8 @@ score2<-function(evaluation, submissionStateToFilter) {
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        directoryPath<-paste0(dirname(filePath), '/content')
-        predictedPath<-list.files(directoryPath, pattern='\\.gct$', full.names=TRUE)[1]
+        directoryPath<-paste0(dirname(filePath), "/content")
+        predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
         score<-calculateScore(measuredData, predictedData)
@@ -375,8 +375,8 @@ score3<-function(evaluation, submissionStateToFilter) {
       for (i in 1:length(page)) {
         submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
-        directoryPath<-paste0(dirname(filePath), '/content')
-        predictedPath<-list.files(directoryPath, pattern='\\.gct$', full.names=TRUE)[1]
+        directoryPath<-paste0(dirname(filePath), "/content")
+        predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
         score<-calculateScore(measuredData, predictedData)
