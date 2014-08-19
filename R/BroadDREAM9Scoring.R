@@ -103,10 +103,12 @@ validate1<-function(evaluation) {
   stopifnot(setequal(colnames(measuredData), colnames(predictedData)))
   predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
 }, silent=TRUE)
-        checkScoring<-try(
-        {
-          stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
-        } , silent=TRUE)
+          checkScoring<-try(
+{
+if (!inherits(checkSubmission, "try-error")) {
+  stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+}
+} , silent=TRUE)
         isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
         subStatus<-page[[i]]$submissionStatus
         if (isValid) {
@@ -169,10 +171,12 @@ validate2<-function(evaluation) {
   stopifnot(ncol(featureData) == SUBCHALLENGE2_FEATURE_COUNT + 1)
   stopifnot(length(which(featureData[,-1] %in% combinedFeatureList)) == length(prioritizedGeneList) * SUBCHALLENGE2_FEATURE_COUNT)
 }, silent=TRUE)
-        checkScoring<-try(
-        {
-          stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
-        } , silent=TRUE)
+      checkScoring<-try(
+{
+  if (!inherits(checkSubmission, "try-error")) {
+    stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+  }
+} , silent=TRUE)
         isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
         subStatus<-page[[i]]$submissionStatus
         if (isValid) {
@@ -234,9 +238,11 @@ validate3<-function(evaluation) {
   stopifnot(length(featureData) == SUBCHALLENGE3_FEATURE_COUNT)
   stopifnot(length(which(featureData %in% combinedFeatureList)) == SUBCHALLENGE3_FEATURE_COUNT)
 }, silent=TRUE)
-        checkScoring<-try(
+checkScoring<-try(
 {
-  stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+  if (!inherits(checkSubmission, "try-error")) {
+    stopifnot(sum(apply(predictedData, 2, sd) == 0) == 0)
+  }
 } , silent=TRUE)
         isValid<-!inherits(checkSubmission, "try-error") & !inherits(checkScoring, "try-error")
         subStatus<-page[[i]]$submissionStatus
