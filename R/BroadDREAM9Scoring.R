@@ -47,7 +47,7 @@ readMeasuredFile<-function(id) {
 }
 
 parsePredictionFile<-function(filePath) {  
-  fileContent<-read.table(filePath, header=TRUE, sep="\t", skip=2, stringsAsFactors=FALSE)
+  fileContent<-read.table(filePath[1], header=TRUE, sep="\t", skip=2, stringsAsFactors=FALSE)
   geneNames<-as.character(fileContent[,1])
   cellLineNames<-colnames(fileContent)[-2:-1]
   predictionData<-t(fileContent[,-2:-1])
@@ -315,7 +315,7 @@ score1<-function(evaluation, submissionStateToFilter) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
+        submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
         predictedData<-parsePredictionFile(filePath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
@@ -346,9 +346,11 @@ score2<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
+        submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
+        extractPath<-paste0(directoryPath, "/content")
+        unzip(filePath, junkpaths=T, exdir=extractPath)
         predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
@@ -379,9 +381,11 @@ score3<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
+        submission<-synGetSubmission(page[[i]]$submission$id)
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
+        extractPath<-paste0(directoryPath, "/content")
+        unzip(filePath, junkpaths=T, exdir=extractPath)
         predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
