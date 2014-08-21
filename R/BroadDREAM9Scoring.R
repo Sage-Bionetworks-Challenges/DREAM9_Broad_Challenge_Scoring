@@ -315,7 +315,7 @@ score1<-function(evaluation, submissionStateToFilter) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
         filePath<-getFileLocation(submission)
         predictedData<-parsePredictionFile(filePath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
@@ -346,7 +346,7 @@ score2<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
         predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
@@ -379,7 +379,7 @@ score3<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, downloadFile = FALSE)
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
         predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
