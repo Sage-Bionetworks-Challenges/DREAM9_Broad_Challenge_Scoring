@@ -40,14 +40,14 @@ copyNumberFeatureListId<-"syn2598376"
 expressionFeatureListId<-"syn2598381"
 
 readMeasuredFile<-function(id) {
-  synEntity<-synGet(id)
+  synEntity<-synGet(id, ifcollision = "overwrite.local")
   filePath<-getFileLocation(synEntity)
   measuredData<-parsePredictionFile(filePath)
   return (measuredData)
 }
 
 parsePredictionFile<-function(filePath) {  
-  fileContent<-read.table(filePath[1], header=TRUE, sep="\t", skip=2, stringsAsFactors=FALSE)
+  fileContent<-read.table(filePath, header=TRUE, sep="\t", skip=2, stringsAsFactors=FALSE)
   geneNames<-as.character(fileContent[,1])
   cellLineNames<-colnames(fileContent)[-2:-1]
   predictionData<-t(fileContent[,-2:-1])
@@ -57,7 +57,7 @@ parsePredictionFile<-function(filePath) {
 }
 
 readFeatureFile<-function(id) {
-  synEntity<-synGet(id)
+  synEntity<-synGet(id, ifcollision = "overwrite.local")
   filePath<-getFileLocation(synEntity)
   featureData<-parseFeatureFile(filePath)
   return (featureData)
@@ -92,7 +92,7 @@ validate1<-function(evaluation) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -150,7 +150,7 @@ validate2<-function(evaluation) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -218,7 +218,7 @@ validate3<-function(evaluation) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -315,7 +315,7 @@ score1<-function(evaluation, submissionStateToFilter) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         predictedData<-parsePredictionFile(filePath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
@@ -346,7 +346,7 @@ score2<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
         extractPath<-paste0(directoryPath, "/content")
@@ -381,7 +381,7 @@ score3<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id)
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision = "overwrite.local")
         filePath<-getFileLocation(submission)
         directoryPath<-paste0(dirname(filePath), "/content")
         extractPath<-paste0(directoryPath, "/content")
