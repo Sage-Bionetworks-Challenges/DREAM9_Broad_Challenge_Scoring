@@ -351,7 +351,7 @@ score2<-function(evaluation, submissionStateToFilter) {
         directoryPath<-dirname(filePath)
         extractPath<-paste0(directoryPath, "/content")
         unzip(filePath, junkpaths=T, exdir=extractPath)
-        predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
+        predictedPath<-list.files(extractPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
         score<-calculateScore(measuredData, predictedData)
