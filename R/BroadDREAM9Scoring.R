@@ -40,7 +40,7 @@ copyNumberFeatureListId<-"syn2598376"
 expressionFeatureListId<-"syn2598381"
 
 readMeasuredFile<-function(id) {
-  synEntity<-synGet(id, ifcollision="overwrite.local")
+  synEntity<-synGet(id, ifcollision="keep.local")
   filePath<-getFileLocation(synEntity)
   measuredData<-parsePredictionFile(filePath)
   return (measuredData)
@@ -92,7 +92,7 @@ validate1<-function(evaluation) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -150,7 +150,7 @@ validate2<-function(evaluation) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -218,7 +218,7 @@ validate3<-function(evaluation) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
         directoryPath<-dirname(filePath)
         checkSubmission<-try(
@@ -315,7 +315,7 @@ score1<-function(evaluation, submissionStateToFilter) {
     if (length(page)>0) {
       measuredData<-readMeasuredFile(measuredDataId)
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
         predictedData<-parsePredictionFile(filePath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
@@ -346,9 +346,9 @@ score2<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
-        directoryPath<-paste0(dirname(filePath), "/content")
+        directoryPath<-dirname(filePath)
         extractPath<-paste0(directoryPath, "/content")
         unzip(filePath, junkpaths=T, exdir=extractPath)
         predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
@@ -381,12 +381,12 @@ score3<-function(evaluation, submissionStateToFilter) {
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
-        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="overwrite.local")
+        submission<-synGetSubmission(page[[i]]$submission$id, ifcollision="keep.local")
         filePath<-getFileLocation(submission)
-        directoryPath<-paste0(dirname(filePath), "/content")
+        directoryPath<-dirname(filePath)
         extractPath<-paste0(directoryPath, "/content")
         unzip(filePath, junkpaths=T, exdir=extractPath)
-        predictedPath<-list.files(directoryPath, pattern="\\.gct$", full.names=TRUE)[1]
+        predictedPath<-list.files(extractPath, pattern="\\.gct$", full.names=TRUE)[1]
         predictedData<-parsePredictionFile(predictedPath)
         predictedData<-predictedData[rownames(measuredData), colnames(measuredData)]
         score<-calculateScore(measuredData, predictedData)
