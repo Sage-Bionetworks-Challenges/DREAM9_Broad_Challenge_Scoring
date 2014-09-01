@@ -29,15 +29,28 @@ SUBCHALLENGE3_FEATURE_COUNT<-100
 #expressionFeatureListId<-"syn2482675"
 ####
 
-evaluationId1<-"2571160"
-evaluationId2<-"2571162"
-evaluationId3<-"2571164"
+#### phase 3 (legacy)
+#evaluationId1<-"2571160"
+#evaluationId2<-"2571162"
+#evaluationId3<-"2571164"
 
-measuredDataId<-"syn2582441"
+#measuredDataId<-"syn2582441"
 
-prioritizedGeneListId<-"syn2598397"
-copyNumberFeatureListId<-"syn2598376"
-expressionFeatureListId<-"syn2598381"
+#prioritizedGeneListId<-"syn2598397"
+#copyNumberFeatureListId<-"syn2598376"
+#expressionFeatureListId<-"syn2598381"
+####
+
+evaluationId1<-"2571166"
+evaluationId2<-"2571168"
+evaluationId3<-"2571170"
+
+measuredDataId<-"syn2660068"
+
+prioritizedGeneListId<-"syn2660067"
+copyNumberFeatureListId<-"syn2660065"
+expressionFeatureListId<-"syn2660066"
+hybridMutationFeatureListId<-"syn2660220"
 
 readMeasuredFile<-function(id) {
   synEntity<-synGet(id, ifcollision="keep.local")
@@ -146,7 +159,8 @@ validate2<-function(evaluation) {
       measuredData<-readMeasuredFile(measuredDataId)
       copyNumberFeatureList<-readFeatureFile(copyNumberFeatureListId)
       expressionFeatureList<-readFeatureFile(expressionFeatureListId)
-      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), NA)
+      hybridMutationFeatureList<-readFeatureFile(hybridMutationFeatureListId)
+      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), union(hybridMutationFeatureList, NA))
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
@@ -214,7 +228,8 @@ validate3<-function(evaluation) {
       measuredData<-readMeasuredFile(measuredDataId)
       copyNumberFeatureList<-readFeatureFile(copyNumberFeatureListId)
       expressionFeatureList<-readFeatureFile(expressionFeatureListId)
-      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), NA)
+      hybridMutationFeatureList<-readFeatureFile(hybridMutationFeatureListId)
+      combinedFeatureList<-union(union(copyNumberFeatureList, expressionFeatureList), union(hybridMutationFeatureList, NA))
       prioritizedGeneList<-readFeatureFile(prioritizedGeneListId)
       measuredData<-measuredData[,prioritizedGeneList]
       for (i in 1:length(page)) {
